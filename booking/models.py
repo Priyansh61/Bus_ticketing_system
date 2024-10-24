@@ -43,16 +43,27 @@ class Seat(models.Model) :
         return f"{self.seat_number} - {self.seat_status}"   
 # Create your models here.
 
+
+class Order(models.Model):
+    user_id = models.ForeignKey(Account, on_delete=models.CASCADE)
+    order_email = models.EmailField(max_length=100)
+    order_phone_number = models.CharField(max_length=15)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=50, choices=BOOKING_STATUS)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Order {self.id} by {self.user.email}"
+
+
 class Booking(models.Model) :
     bus_id = models.ForeignKey(Bus, on_delete=models.CASCADE)
     seat_id = models.ForeignKey(Seat, on_delete=models.CASCADE)
-    user_id = models.ForeignKey(Account, on_delete=models.CASCADE)
-    booking_date = models.DateField(auto_now_add=True)
-    booking_time = models.TimeField(auto_now_add=True)
-    booking_status = models.CharField(max_length=100, choices=BOOKING_STATUS)
+    order_id = models.ForeignKey(Order, on_delete=models.CASCADE)
+    user_name = models.CharField(max_length=100)
     booking_price = models.IntegerField()
-    booking_email = models.EmailField(max_length=100)
-    booking_phone = models.CharField(max_length=15)
     
     def __str__(self):
-        return f"{self.bus_id} - {self.seat_id} - {self.booking_date} - {self.booking_time} - {self.booking_status}"
+        return f"Booking for Seat {self.seat.seat_number} on Bus {self.bus.bus_name}"
+
+

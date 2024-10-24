@@ -21,9 +21,9 @@ class SeatAdmin(admin.ModelAdmin):
     list_per_page = 10
 
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ['bus_id', 'seat_id', 'user_id', 'booking_date', 'booking_time', 'booking_status', 'booking_price', 'booking_email', 'booking_phone']
-    search_fields = ['bus_id', 'seat_id', 'user_id', 'booking_date', 'booking_time', 'booking_status', 'booking_price', 'booking_email', 'booking_phone']
-    list_filter = ['bus_id', 'seat_id', 'user_id', 'booking_date', 'booking_time', 'booking_status', 'booking_price', 'booking_email', 'booking_phone']
+    list_display = ['bus_id', 'seat_id','booking_price', 'order_id', 'user_name']
+    search_fields = ['bus_id', 'seat_id','booking_price', 'order_id', 'user_name']
+    list_filter = ['bus_id', 'seat_id','booking_price', 'order_id', 'user_name']
     list_per_page = 10
 
 admin.site.register(Bus, BusAdmin)
