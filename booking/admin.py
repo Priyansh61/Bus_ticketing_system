@@ -2,9 +2,9 @@ from django.contrib import admin
 from .models import Bus, Route, Booking, Seat, Order, Trip
 
 class BusAdmin(admin.ModelAdmin):
-    list_display = ['bus_name', 'bus_number', 'bus_capacity', 'bus_route', 'days_of_operation']
-    search_fields = ['bus_name', 'bus_number', 'bus_capacity', 'bus_route', 'days_of_operation']
-    list_filter = ['bus_name', 'bus_number', 'bus_capacity', 'bus_route', 'days_of_operation']
+    list_display = ['bus_name', 'bus_number', 'bus_capacity', 'days_of_operation']
+    search_fields =['bus_name', 'bus_number', 'bus_capacity', 'days_of_operation']
+    list_filter = ['bus_name', 'bus_number', 'bus_capacity', 'days_of_operation']
     list_per_page = 10
 
 

@@ -22,7 +22,6 @@ class Bus(models.Model):
     bus_name = models.CharField(max_length=100)
     bus_number = models.CharField(max_length=100)
     bus_capacity = models.IntegerField()
-    bus_route = models.ForeignKey(Route, on_delete=models.CASCADE)
     days_of_operation = models.CharField(max_length=100)  # Comma-separated days like "Mon, Tue, Wed"
 
     def __str__(self):
