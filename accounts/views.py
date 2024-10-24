@@ -16,3 +16,16 @@ def register_user(request):
         serializer.save()
         return Response({'message': 'User registered successfully!'}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT'])
+def account_detail(request):
+    user = request.user
+    if request.method == 'GET':
+        serializer = AccountSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == 'PUT':
+        serializer = AccountSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

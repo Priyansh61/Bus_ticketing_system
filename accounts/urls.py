@@ -5,4 +5,5 @@ from .views import register_user
 
 urlpatterns = [
     path('register/', register_user, name='register_user'),
+    path('account/', account_detail, name='account_detail')
 ]
