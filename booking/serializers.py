@@ -1,7 +1,7 @@
 # booking/serializers.py
 
 from rest_framework import serializers
-from .models import Route, Bus, Seat, Booking
+from .models import Route, Bus, Seat, Booking, Order
 
 class RouteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,4 +21,9 @@ class SeatSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
+        fields = '__all__'
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
         fields = '__all__'

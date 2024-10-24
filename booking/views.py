@@ -1,11 +1,13 @@
 # booking/views.py
 
 from rest_framework import viewsets
-from .models import Route, Bus, Seat, Booking
-from .serializers import RouteSerializer, BusSerializer, SeatSerializer, BookingSerializer
-from rest_framework.decorators import api_view
+from .models import Route, Bus, Seat, Booking, Order
+from .serializers import RouteSerializer, BusSerializer, SeatSerializer, BookingSerializer, OrderSerializer
+from rest_framework.decorators import api_view, permission_classes
 from django.db import transaction
 from .models import Bus, Seat, Booking, Order
+from rest_framework.permissions import IsAuthenticated
+
 
 
 # {
@@ -88,6 +90,13 @@ def create_booking(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class OrderViewSet(viewsets.ModelViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
+        
 
 class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.all()
@@ -102,5 +111,8 @@ class SeatViewSet(viewsets.ModelViewSet):
     serializer_class = SeatSerializer
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(order__user=self.request.user)
