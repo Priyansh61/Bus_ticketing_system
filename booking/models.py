@@ -31,13 +31,13 @@ class Bus(models.Model) :
 class Seat(models.Model) :
     seat_number = models.IntegerField()
     seat_status = models.BooleanField(default=False)
-    bus_id = models.ForeignKey(Bus, on_delete=models.CASCADE)
+    bus = models.ForeignKey(Bus, on_delete=models.CASCADE)
 
     class Meta:
         indexes = [
-            models.Index(fields=['seat_number', 'bus_id']),
+            models.Index(fields=['seat_number', 'bus']),
         ]
-        unique_together = ('seat_number', 'bus_id')
+        unique_together = ('seat_number', 'bus')
 
     def __str__(self):
         return f"{self.seat_number} - {self.seat_status}"   
@@ -45,7 +45,7 @@ class Seat(models.Model) :
 
 
 class Order(models.Model):
-    user_id = models.ForeignKey(Account, on_delete=models.CASCADE)
+    user = models.ForeignKey(Account, on_delete=models.CASCADE)
     order_email = models.EmailField(max_length=100)
     order_phone_number = models.CharField(max_length=15)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -57,9 +57,9 @@ class Order(models.Model):
 
 
 class Booking(models.Model) :
-    bus_id = models.ForeignKey(Bus, on_delete=models.CASCADE)
-    seat_id = models.ForeignKey(Seat, on_delete=models.CASCADE)
-    order_id = models.ForeignKey(Order, on_delete=models.CASCADE)
+    bus = models.ForeignKey(Bus, on_delete=models.CASCADE)
+    seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     user_name = models.CharField(max_length=100)
     booking_price = models.IntegerField()
     
