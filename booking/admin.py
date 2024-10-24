@@ -15,15 +15,15 @@ class RouteAdmin(admin.ModelAdmin):
     list_per_page = 10
 
 class SeatAdmin(admin.ModelAdmin):
-    list_display = ['seat_number', 'seat_status', 'bus_id']
-    search_fields = ['seat_number', 'seat_status', 'bus_id']
-    list_filter = ['seat_number', 'seat_status', 'bus_id']
+    list_display = ['seat_number', 'seat_status', 'trip']
+    search_fields = ['seat_number', 'seat_status', 'trip']
+    list_filter = ['seat_number', 'seat_status', 'trip']
     list_per_page = 10
 
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ['bus_id', 'seat_id','booking_price', 'order_id', 'user_name']
-    search_fields = ['bus_id', 'seat_id','booking_price', 'order_id', 'user_name']
-    list_filter = ['bus_id', 'seat_id','booking_price', 'order_id', 'user_name']
+    list_display = ['seat','booking_price', 'order', 'user_name']
+    search_fields = ['seat','booking_price', 'order', 'user_name']
+    list_filter =['seat','booking_price', 'order', 'user_name']
     list_per_page = 10
 
 class OrderAdmin(admin.ModelAdmin):

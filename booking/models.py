@@ -7,41 +7,47 @@ BOOKING_STATUS = [
     ('Cancelled', 'Cancelled'),
 ]
 
-class Route(models.Model) :
+class Route(models.Model):
     route_name = models.CharField(max_length=100)
     route_from = models.CharField(max_length=100)
     route_to = models.CharField(max_length=100)
     route_price = models.IntegerField()
     route_time = models.TimeField()
-    
+
     def __str__(self):
         return f"{self.route_name} - {self.route_from} to {self.route_to}"
 
-    
-class Bus(models.Model) :
+
+class Bus(models.Model):
     bus_name = models.CharField(max_length=100)
     bus_number = models.CharField(max_length=100)
     bus_capacity = models.IntegerField()
     bus_route = models.ForeignKey(Route, on_delete=models.CASCADE)
-    days_of_operation = models.CharField(max_length=100)
-    
+    days_of_operation = models.CharField(max_length=100)  # Comma-separated days like "Mon, Tue, Wed"
+
     def __str__(self):
         return f"{self.bus_name} - {self.bus_number}"
 
-class Seat(models.Model) :
-    seat_number = models.IntegerField()
-    seat_status = models.BooleanField(default=False)
-    bus = models.ForeignKey(Bus, on_delete=models.CASCADE)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=['seat_number', 'bus']),
-        ]
-        unique_together = ('seat_number', 'bus')
+class Trip(models.Model):
+    bus = models.ForeignKey(Bus, on_delete=models.CASCADE)
+    route = models.ForeignKey(Route, on_delete=models.CASCADE)
+    date = models.DateField()  # Represents the specific date for the trip
 
     def __str__(self):
-        return f"{self.seat_number} - {self.seat_status}"   
-# Create your models here.
+        return f"Trip for {self.bus.bus_name} on {self.date}"
+
+
+class Seat(models.Model):
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
+    seat_number = models.IntegerField()
+    seat_status = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('trip', 'seat_number')
+
+    def __str__(self):
+        return f"Seat {self.seat_number} on Trip {self.trip}"
 
 
 class Order(models.Model):
@@ -56,14 +62,11 @@ class Order(models.Model):
         return f"Order {self.id} by {self.user.email}"
 
 
-class Booking(models.Model) :
-    bus = models.ForeignKey(Bus, on_delete=models.CASCADE)
+class Booking(models.Model):
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    user_name = models.CharField(max_length=100)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='bookings')
+    user_name = models.CharField(max_length=100)  
     booking_price = models.IntegerField()
-    
+
     def __str__(self):
-        return f"Booking for Seat {self.seat.seat_number} on Bus {self.bus.bus_name}"
-
-
+        return f"Booking for Seat {self.seat.seat_number} on Trip {self.seat.trip}"
