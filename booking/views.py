@@ -2,11 +2,12 @@
 
 from rest_framework import viewsets
 from .models import Route, Bus, Seat, Booking, Order
-from .serializers import RouteSerializer, BusSerializer, SeatSerializer, BookingSerializer, OrderSerializer
+from .serializers import RouteSerializer, BusSerializer, SeatSerializer, BookingSerializer, OrderSerializer, TripAvailabilitySerializer
 from rest_framework.decorators import api_view, permission_classes
 from django.db import transaction
 from .models import Bus, Seat, Booking, Order
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 
 
 
@@ -30,22 +31,23 @@ def create_booking(request):
     except (Bus.DoesNotExist, Route.DoesNotExist):
         return Response({'error': 'Bus or route not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Retrieve an existing Trip for the given bus, route, and date
     try:
         trip = Trip.objects.get(bus=bus, route=route, date=travel_date)
     except Trip.DoesNotExist:
         return Response({'error': 'No scheduled trip found for the selected bus, route, and date'}, status=status.HTTP_404_NOT_FOUND)
 
     try:
+        # Start a database transaction to ensure all-or-nothing operations
         with transaction.atomic():
             total_price = 0
             bookings = []
 
+            # Create an order for the user
             order = Order.objects.create(
                 user=user,
                 order_email=order_email,
                 order_phone_number=order_phone_number,
-                total_price=0,  # Set initial total price to 0, will update later
+                total_price=0,
                 status='Pending'
             )
 
@@ -56,13 +58,11 @@ def create_booking(request):
                 if not seat_number or not user_name:
                     return Response({'error': 'Each seat must have a seat number and user name'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Fetch the seat or create it if it does not exist
                 try:
                     seat = Seat.objects.get(trip=trip, seat_number=seat_number)
                 except Seat.DoesNotExist:
                     return Response({'error': f'Seat {seat_number} not found for the selected trip'}, status=status.HTTP_404_NOT_FOUND)
 
-                # Check if the seat is already booked
                 if seat.seat_status:
                     return Response({'error': f'Seat {seat_number} is already booked for the selected date'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -71,7 +71,6 @@ def create_booking(request):
 
                 total_price += route.route_price
 
-                # Create a Booking instance
                 booking = Booking(
                     seat=seat,
                     order=order,
@@ -81,15 +80,40 @@ def create_booking(request):
 
                 bookings.append(booking)
 
-            # Update the order total price and set status to confirmed
             order.total_price = total_price
             order.status = 'Confirmed'
             order.save()
 
-            # Bulk create all bookings
             Booking.objects.bulk_create(bookings)
 
             return Response({'message': 'Booking successful', 'order_id': order.id}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def available_trips(request):
+    source = request.query_params.get('source')
+    destination = request.query_params.get('destination')
+    travel_date = request.query_params.get('travel_date')
+
+    # Validate required parameters
+    if not source or not destination or not travel_date:
+        return Response({'error': 'Source, destination, and travel date are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        routes = Route.objects.filter(route_from=source, route_to=destination)
+        if not routes.exists():
+            return Response({'error': 'No routes found for the given source and destination'}, status=status.HTTP_404_NOT_FOUND)
+
+        trips = Trip.objects.filter(route__in=routes, date=travel_date)
+
+        if not trips.exists():
+            return Response({'error': 'No trips found for the given criteria'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TripAvailabilitySerializer(trips, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
