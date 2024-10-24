@@ -10,30 +10,31 @@ from rest_framework.permissions import IsAuthenticated
 
 
 
-# {
-#   "bus_id": 1,
-#   "seats": [
-#     {"seat_number": 5, "user_name": "Alice"},
-#     {"seat_number": 6, "user_name": "Bob"}
-#   ],
-#   "email": "testuser@example.com",
-#   "phone_number": "1234567890"
-# }
+
 @api_view(['POST'])
 def create_booking(request):
     user = request.user
     bus_id = request.data.get('bus_id')
-    seats_to_book = request.data.get('seats') 
+    route_id = request.data.get('route_id')
+    travel_date = request.data.get('travel_date')
+    seats_to_book = request.data.get('seats')  # List of dictionaries with seat_number and user_name
     order_email = request.data.get('email')
     order_phone_number = request.data.get('phone_number')
 
-    if not seats_to_book:
-        return Response({'error': 'No seats to book'}, status=status.HTTP_400_BAD_REQUEST)
+    if not seats_to_book or not travel_date:
+        return Response({'error': 'Seats and travel date are required'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         bus = Bus.objects.get(id=bus_id)
-    except Bus.DoesNotExist:
-        return Response({'error': 'Bus not found'}, status=status.HTTP_404_NOT_FOUND)
+        route = Route.objects.get(id=route_id)
+    except (Bus.DoesNotExist, Route.DoesNotExist):
+        return Response({'error': 'Bus or route not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Retrieve an existing Trip for the given bus, route, and date
+    try:
+        trip = Trip.objects.get(bus=bus, route=route, date=travel_date)
+    except Trip.DoesNotExist:
+        return Response({'error': 'No scheduled trip found for the selected bus, route, and date'}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         with transaction.atomic():
@@ -44,11 +45,10 @@ def create_booking(request):
                 user=user,
                 order_email=order_email,
                 order_phone_number=order_phone_number,
-                total_price=total_price,  
+                total_price=0,  # Set initial total price to 0, will update later
                 status='Pending'
             )
 
-            # Loop through each seat to create individual bookings
             for seat_info in seats_to_book:
                 seat_number = seat_info.get('seat_number')
                 user_name = seat_info.get('user_name')
@@ -56,39 +56,44 @@ def create_booking(request):
                 if not seat_number or not user_name:
                     return Response({'error': 'Each seat must have a seat number and user name'}, status=status.HTTP_400_BAD_REQUEST)
 
+                # Fetch the seat or create it if it does not exist
                 try:
-                    seat = Seat.objects.select_for_update().get(bus=bus, seat_number=seat_number)
+                    seat = Seat.objects.get(trip=trip, seat_number=seat_number)
                 except Seat.DoesNotExist:
-                    return Response({'error': f'Seat {seat_number} not found'}, status=status.HTTP_404_NOT_FOUND)
+                    return Response({'error': f'Seat {seat_number} not found for the selected trip'}, status=status.HTTP_404_NOT_FOUND)
 
+                # Check if the seat is already booked
                 if seat.seat_status:
-                    return Response({'error': f'Seat {seat_number} is already booked'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'error': f'Seat {seat_number} is already booked for the selected date'}, status=status.HTTP_400_BAD_REQUEST)
 
                 seat.seat_status = True
                 seat.save()
 
-                total_price += bus.bus_route.route_price
+                total_price += route.route_price
 
+                # Create a Booking instance
                 booking = Booking(
-                    bus=bus,
                     seat=seat,
                     order=order,
                     user_name=user_name,
-                    booking_price=bus.bus_route.route_price
+                    booking_price=route.route_price
                 )
 
                 bookings.append(booking)
 
+            # Update the order total price and set status to confirmed
             order.total_price = total_price
             order.status = 'Confirmed'
             order.save()
 
+            # Bulk create all bookings
             Booking.objects.bulk_create(bookings)
 
             return Response({'message': 'Booking successful', 'order_id': order.id}, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
